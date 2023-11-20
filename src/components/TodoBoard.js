@@ -1,5 +1,7 @@
-import React from 'react';
-import Task from './Task';
+
+import React from "react";
+import Task from "./Task";
+
 const TodoBoard = ({
   tasks,
   lane,
@@ -8,9 +10,9 @@ const TodoBoard = ({
   onDoubleClick,
   onContextMenu,
   onDragStart,
-  draggedTaskId,
   onEditTask,
   onDeleteTask,
+  onToggleCheckbox,
 }) => {
   return (
     <div
@@ -23,19 +25,21 @@ const TodoBoard = ({
         <div key={task.id} className="task-container">
           <Task
             text={task.text}
+            completed={task.completed}
             onDragStart={(e) => onDragStart(e, task.id)}
             onDoubleClick={() => onDoubleClick(task.id)}
             onContextMenu={(e) => {
               e.preventDefault();
               onContextMenu(task.id);
             }}
+            onToggleCheckbox={() => onToggleCheckbox(task.id)}
           />
           <div className="task-icons">
             <span onClick={() => onEditTask(task.id)}>
-              <img src="/images/edit.png" alt="Edit" id='edit-img' />
+              <img src="/images/edit.png" alt="Edit" id="edit-img" />
             </span>
             <span onClick={() => onDeleteTask(task.id)}>
-              <img src="/images/delete.png" alt="Delete" id='delete-img' />
+              <img src="/images/delete.png" alt="Delete" id="delete-img" />
             </span>
           </div>
         </div>

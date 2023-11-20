@@ -1,17 +1,24 @@
-// Task.js
-import React from 'react';
 
-const Task = ({ text, onDragStart, onDoubleClick, onContextMenu }) => {
+import React from "react";
+
+const Task = ({ text, completed, onDragStart, onDoubleClick, onContextMenu, onToggleCheckbox }) => {
   return (
-    <p
-      className="task"
+    <div
+      className={`task ${completed ? "completed" : ""}`}
       draggable
-      onDragStart={onDragStart}
+      onDragStart={(e) => onDragStart(e)}
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
+      style={{ display: "flex", alignItems: "center", minHeight: "15px", padding:"0" }}
     >
-      {text}
-    </p>
+      <input
+        type="checkbox"
+        checked={completed}
+        onChange={onToggleCheckbox}
+        style={{ transform: "scale(0.8)", width: "10%" }}
+      />
+      <span style={{ width: "95%" }}>{text}</span>
+    </div>
   );
 };
 

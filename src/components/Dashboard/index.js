@@ -1,21 +1,31 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./dashboard.css";
 import TodoBoard from "../TodoBoard";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
-  const initialTasks = {
+  // Load user data from localStorage
+  const storedUserData = JSON.parse(localStorage.getItem("userData"));
+  const initials = storedUserData.name
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase())
+    .join("");
+
+  // Load tasks from localStorage or use the initialTasks if not present
+  const storedTasks = JSON.parse(localStorage.getItem("tasks"));
+  const initialTasks = storedTasks || {
     todo: [
       { id: 1, text: "Code" },
       { id: 2, text: "Eat" },
       { id: 3, text: "Sleep" },
     ],
+    List1: [],
     List2: [],
-    List3: [],
   };
 
   const [tasks, setTasks] = useState(initialTasks);
   const [newTask, setNewTask] = useState("");
+  const [newListName, setNewListName] = useState("");
   const [draggedTaskId, setDraggedTaskId] = useState(null);
 
   const handleInputChange = (e) => {
@@ -58,7 +68,16 @@ const Dashboard = () => {
     }
   };
 
-  // Helper function to get the lane of a task
+  const handleAddList = () => {
+    if (newListName.trim() !== "") {
+      setTasks((prevTasks) => ({
+        ...prevTasks,
+        [newListName]: [],
+      }));
+      setNewListName("");
+    }
+  };
+
   const getLane = (taskId) => {
     return Object.keys(tasks).find((lane) =>
       tasks[lane].some((task) => task.id === taskId)
@@ -78,17 +97,14 @@ const Dashboard = () => {
     const taskId = parseInt(e.dataTransfer.getData("text/plain"), 10);
     const updatedTasks = { ...tasks };
 
-    // Find the dragged task in the source lane
     const sourceLane = Object.keys(updatedTasks).find((lane) =>
       updatedTasks[lane].some((task) => task.id === taskId)
     );
 
-    // Remove the task from the source lane
     updatedTasks[sourceLane] = updatedTasks[sourceLane].filter(
       (task) => task.id !== taskId
     );
 
-    // Add the task to the new lane
     updatedTasks[targetLane] = [
       ...updatedTasks[targetLane],
       {
@@ -101,33 +117,36 @@ const Dashboard = () => {
     setDraggedTaskId(null);
   };
 
+  const handleToggleCheckbox = (taskId) => {
+    setTasks((prevTasks) => ({
+      ...prevTasks,
+      [getLane(taskId)]: prevTasks[getLane(taskId)].map((task) =>
+        task.id === taskId ? { ...task, completed: !task.completed } : task
+      ),
+    }));
+  };
+
+  // Update tasks in localStorage whenever tasks state changes
+  useEffect(() => {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+  }, [tasks]);
+
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Redirect to the landing page on logout
     navigate("/");
   };
 
   const handleSignout = () => {
-    // Clear all data from localStorage to sign out
     localStorage.clear();
     navigate("/");
   };
 
-  // Retrieve user data from localStorage
-  const storedUserData = JSON.parse(localStorage.getItem("userData"));
-
-  //Profile picture===== Extract and format the initials from the user's name
-  const initials = storedUserData.name
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase())
-    .join("");
-
   return (
     <div className="App">
-      <div className="subcontainer">
+      <div className="nav">
         <div className="profileInfo">
-          <p style={{ fontWeight: "bold", color: "white", fontSize:"larger" }}>
+          <p style={{ fontWeight: "bold", color: "white", fontSize: "larger" }}>
             Welcome, {storedUserData.name}
           </p>
         </div>
@@ -138,59 +157,51 @@ const Dashboard = () => {
         </div>
       </div>
       <div className="board">
-        <form onSubmit={(e) => addTask(e, "todo")}>
-          <input
-            type="text"
-            placeholder="  ADD TO LIST 1 ..."
-            value={newTask}
-            onChange={handleInputChange}
-            id="todo-input"
-          />
-          <button type="submit" id="add-btn">
-            {" "}
-            Add{" "}
-          </button>
-        </form>
+        <div className="inputs">
+          <form onSubmit={(e) => addTask(e, "todo")}>
+            <input
+              type="text"
+              placeholder="  ADD TO LIST 1 ..."
+              value={newTask}
+              onChange={handleInputChange}
+              id="todo-input"
+            />
+            <button type="submit" id="add-btn">
+              {" "}
+              Add Task{" "}
+            </button>
+          </form>
+          <div>
+            <input
+              type="text"
+              placeholder="ENTER NEW LIST NAME..."
+              value={newListName}
+              onChange={(e) => setNewListName(e.target.value)}
+              id="todo-input"
+            />
+            <button onClick={handleAddList} id="add-btn">
+              Add List Column
+            </button>
+          </div>
+        </div>
 
         <div className="lanes">
-          <TodoBoard
-            tasks={tasks.todo}
-            lane="List 1"
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, "todo")}
-            onDoubleClick={handleEditTask}
-            onContextMenu={handleDeleteTask}
-            onDragStart={handleDragStart}
-            draggedTaskId={draggedTaskId}
-            onEditTask={handleEditTask}
-            onDeleteTask={handleDeleteTask}
-          />
-
-          <TodoBoard
-            tasks={tasks.List2}
-            lane="List 2"
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, "List2")}
-            onDoubleClick={handleEditTask}
-            onContextMenu={handleDeleteTask}
-            onDragStart={handleDragStart}
-            draggedTaskId={draggedTaskId}
-            onEditTask={handleEditTask}
-            onDeleteTask={handleDeleteTask}
-          />
-
-          <TodoBoard
-            tasks={tasks.List3}
-            lane="List 3"
-            onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, "List3")}
-            onDoubleClick={handleEditTask}
-            onContextMenu={handleDeleteTask}
-            onDragStart={handleDragStart}
-            draggedTaskId={draggedTaskId}
-            onEditTask={handleEditTask}
-            onDeleteTask={handleDeleteTask}
-          />
+          {Object.keys(tasks).map((lane) => (
+            <TodoBoard
+              key={lane}
+              tasks={tasks[lane]}
+              lane={lane}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, lane)}
+              onDoubleClick={handleEditTask}
+              onContextMenu={handleDeleteTask}
+              onDragStart={handleDragStart}
+              draggedTaskId={draggedTaskId}
+              onEditTask={handleEditTask}
+              onDeleteTask={handleDeleteTask}
+              onToggleCheckbox={handleToggleCheckbox}
+            />
+          ))}
         </div>
       </div>
     </div>
